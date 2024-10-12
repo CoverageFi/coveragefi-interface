@@ -1,6 +1,7 @@
 'use client'
 
 import { createAppKit } from '@reown/appkit/react'
+import { AppKitNetwork } from '@reown/appkit/networks'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PropsWithChildren } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
@@ -25,7 +26,7 @@ const metadata = {
 createAppKit({
   adapters: [WALLETCONNECT_ADAPTER],
   projectId: WALLETCONNECT_PROJECT_ID,
-  networks: ETH_CHAINS,
+  networks: ETH_CHAINS as [AppKitNetwork, ...AppKitNetwork[]],
   defaultNetwork: mainnet,
   metadata: metadata,
   features: {

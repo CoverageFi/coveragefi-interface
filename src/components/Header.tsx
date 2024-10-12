@@ -1,20 +1,28 @@
 import React from 'react'
-import { LinkComponent } from './LinkComponent'
-import { SITE_EMOJI } from '@/utils/site'
+import Link from 'next/link'
 import { Connect } from './Connect'
-import { NotificationsDrawer } from './NotificationsDrawer'
 
 export function Header() {
   return (
-    <header className='navbar flex justify-between p-4 pt-0'>
-      <LinkComponent href='/'>
-        <h1 className='text-xl font-bold'>{SITE_EMOJI}</h1>
-      </LinkComponent>
-
+    <div className='fixed left-0 right-0 lg:w-[70%] mx-auto py-4 lg:py-5 px-6 flex items-center justify-between'>
       <div className='flex gap-2'>
-        <Connect />
-        <NotificationsDrawer />
+        <Link href='/' className='mr-10 flex items-center'>
+          <h2 className='hover:opacity-70 duration-200 text-2xl font-semibold'>CoverageFi</h2>
+        </Link>
+        <div className='hidden lg:flex gap-6 [&>*]:cursor-pointer'>
+          <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
+            Send
+          </span>
+          <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
+            About
+          </span>
+          <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
+            Docs
+          </span>
+        </div>
       </div>
-    </header>
+
+      <Connect />
+    </div>
   )
 }

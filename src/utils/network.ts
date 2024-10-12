@@ -1,23 +1,20 @@
 import { CaipNetwork } from '@reown/appkit'
-import { mainnet, arbitrum, base, polygon, optimism } from '@reown/appkit/networks'
-import { sepolia } from '@reown/appkit/networks'
+import { sepolia, baseSepolia, arbitrumSepolia, Chain } from '@reown/appkit/networks'
 
-let chains = [mainnet, arbitrum, base, polygon, optimism] as CaipNetwork[]
-
-if (process.env.NODE_ENV !== 'production') chains.push(sepolia)
+let chains = [sepolia as Chain, baseSepolia as Chain, arbitrumSepolia as Chain] as CaipNetwork[]
 
 export const ETH_CHAINS = chains
 
 export const NETWORK_COLORS = {
-  ethereum: {
+  sepolia: {
     color: 'green',
     bgVariant: 'bg-green-600',
   },
-  arbitrum: {
+  arbitrumSepolia: {
     color: 'sky',
     bgVariant: 'bg-sky-600',
   },
-  base: {
+  baseSepolia: {
     color: 'blue',
     bgVariant: 'bg-blue-600',
   },
@@ -45,9 +42,9 @@ export const NETWORK_COLORS = {
 
 export function GetNetworkColor(chain?: string, type: 'color' | 'bgVariant' = 'color') {
   chain = chain?.toLocaleLowerCase()
-  if (chain === 'ethereum' || chain === 'mainnet' || chain === 'homestead') return NETWORK_COLORS.ethereum[type]
-  if (chain?.includes('arbitrum')) return NETWORK_COLORS.arbitrum[type]
-  if (chain?.includes('base')) return NETWORK_COLORS.base[type]
+  if (chain === 'ethereum' || chain === 'mainnet' || chain === 'homestead') return NETWORK_COLORS.sepolia[type]
+  if (chain?.includes('arbitrum')) return NETWORK_COLORS.arbitrumSepolia[type]
+  if (chain?.includes('base')) return NETWORK_COLORS.baseSepolia[type]
   if (chain?.includes('linea')) return NETWORK_COLORS.linea[type]
   if (chain?.includes('polygon') || chain?.includes('matic')) return NETWORK_COLORS.polygon[type]
   if (chain?.includes('optimism') || chain?.startsWith('op')) return NETWORK_COLORS.optimism[type]

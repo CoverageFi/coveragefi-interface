@@ -1,23 +1,13 @@
-import { CardList } from '@/components/CardList'
-import { SITE_DESCRIPTION, SITE_NAME } from '@/utils/site'
-import { EXAMPLE_ITEMS } from './examples/examples'
+import { SITE_INFO, SITE_NAME } from '@/utils/site'
 
 export default function Home() {
   return (
     <>
-      <h2 className='text-2xl mb-2'>{SITE_NAME}</h2>
-      <p>{SITE_DESCRIPTION}</p>
-
-      {/* Examples are only used for demo purposes. Feel free to delete this section */}
-      <div className='mt-4'>
-        <h3 className='text-lg mb-2'>Examples</h3>
-        <p className='mb-4'>
-          The following examples are used for demo purposes and help you bootstrap development. You can find the example
-          the main repo at <code>src/app/examples</code>. Feel free to delete this section and the examples folder for
-          your own App.
-        </p>
-
-        <CardList items={EXAMPLE_ITEMS} />
+      <div className='min-h-screen flex items-center justify-center flex-col gap-5 lg:gap-6'>
+        <h2 className='text-6xl lg:text-[10rem] p-2 lg:p-6 bg-gradient-to-b from-[#E4E4E4] to-[#8b8b8b] bg-clip-text text-transparent'>
+          {SITE_NAME}
+        </h2>
+        <span className='opacity-70 text-xl lg:text-3xl capitalize'>{SITE_INFO}</span>
       </div>
     </>
   )

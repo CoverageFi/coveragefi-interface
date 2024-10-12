@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
 import { parseUnits, erc20Abi } from 'viem'
 import { sepolia } from 'viem/chains'
@@ -12,6 +12,8 @@ import { abi } from '@/utils/abis/cross-chain-sender-abi'
 import { useReadContract } from 'wagmi'
 import { wormholeSendableTokens } from '@/utils/constants'
 import { UserAllowanceAmount } from '@/types/general'
+import { useAuth } from '@/context/AuthContext'
+import { useRouter } from 'next/navigation'
 
 export default function Send() {
   const [amount, setAmount] = useState('')
@@ -22,6 +24,15 @@ export default function Send() {
   const { address, chain } = useAccount()
   const { writeContractAsync: sendWrite } = useWormholeSend()
   const { writeContractAsync: erc20ApproveWrite } = useErc20Approve()
+
+  const router = useRouter()
+  const { isRegistered } = useAuth()
+
+  useEffect(() => {
+    if (!isRegistered) {
+      router.push('/register')
+    }
+  }, [isRegistered, router])
 
   const publicClient = usePublicClient({
     chainId: sepolia.id,

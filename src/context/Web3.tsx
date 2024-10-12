@@ -1,7 +1,7 @@
 'use client'
 
 import { createAppKit } from '@reown/appkit/react'
-import { AppKitNetwork } from '@reown/appkit/networks'
+import { AppKitNetwork, sepolia } from '@reown/appkit/networks'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { PropsWithChildren } from 'react'
 import { cookieToInitialState, WagmiProvider, type Config } from 'wagmi'
@@ -27,7 +27,7 @@ createAppKit({
   adapters: [WALLETCONNECT_ADAPTER],
   projectId: WALLETCONNECT_PROJECT_ID,
   networks: ETH_CHAINS as [AppKitNetwork, ...AppKitNetwork[]],
-  defaultNetwork: mainnet,
+  defaultNetwork: sepolia,
   metadata: metadata,
   features: {
     analytics: true, // Optional - defaults to your Cloud configuration

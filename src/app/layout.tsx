@@ -3,6 +3,7 @@ import { PropsWithChildren } from 'react'
 import { SITE_DESCRIPTION, SITE_EMOJI, SITE_INFO, SITE_NAME, SITE_URL, SOCIAL_TWITTER } from '@/utils/site'
 import { Layout } from '@/components/Layout'
 import { Web3Provider } from '@/context/Web3'
+import { AuthProvider } from '@/context/AuthContext'
 import { headers } from 'next/headers'
 import '../assets/globals.css'
 
@@ -59,7 +60,9 @@ export default function RootLayout(props: PropsWithChildren) {
 
       <body>
         <Web3Provider cookies={cookies}>
-          <Layout>{props.children}</Layout>
+          <AuthProvider>
+            <Layout>{props.children}</Layout>
+          </AuthProvider>
         </Web3Provider>
       </body>
     </html>

@@ -10,9 +10,11 @@ export function Header() {
           <h2 className='hover:opacity-70 duration-200 text-2xl font-semibold'>CoverageFi</h2>
         </Link>
         <div className='hidden lg:flex gap-6 [&>*]:cursor-pointer'>
-          <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
-            Send
-          </span>
+          <Link href='/send' className='flex justify-items-center'>
+            <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
+              Send
+            </span>
+          </Link>
           <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
             About
           </span>

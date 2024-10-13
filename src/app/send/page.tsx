@@ -26,6 +26,7 @@ export default function Send() {
   const [selectedToToken, setSelectedToToken] = useState(wormholeSendableTokens[0])
   const [isFromTokenAndChainOpen, setIsFromTokenAndChainOpen] = useState(false)
   const [isToTokenAndChainOpen, setIsToTokenAndChainOpen] = useState(false)
+  const [receipent, setRecepient] = useState('')
 
   const { address, chain } = useAccount()
   const { writeContractAsync: sendWrite } = useWormholeSend()
@@ -83,6 +84,10 @@ export default function Send() {
         setAmount(value)
       }
     }
+  }
+
+  const handleReceipentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRecepient(e.target.value)
   }
 
   const chainQuote = useReadContract({
@@ -171,7 +176,7 @@ export default function Send() {
     }
     setIsLoading(true)
     try {
-      const receiverAddress = RECEIVER_CONTRACT_ADDRESSES[toChain.id]
+      //   const receiverAddress = RECEIVER_CONTRACT_ADDRESSES[toChain.id]
       const depositCost = chainQuote.data
 
       const tx = await sendWrite({
@@ -181,7 +186,7 @@ export default function Send() {
         args: [
           10004, // Wormhole chain ID
           '0xe3F3Fb3a7a5B046298817f0AB073a659f68cbdB3', // targetReceiver
-          '0xB57714641587509C8aFA8882Aa8756b749f2105B', // recipient
+          receipent, // recipient
           parseUnits(amount, selectedFromToken.decimals), // amount to send
           selectedFromToken.address, // IERC20 token address
         ],
@@ -229,7 +234,7 @@ export default function Send() {
         <div className='flex flex-col gap-12 w-full justify-center items-center py-4'>
           <h4 className='font-bold opacity-90 text-3xl lg:text-5xl text-center py-3'>Send</h4>
           <div className='flex flex-col gap-3 text-lg w-full'>
-            <span className='opacity-60 text-sm mt-6'>From</span>
+            <span className='opacity-60 text-sm'>From</span>
             <TokenAndChain
               isOpen={isFromTokenAndChainOpen}
               chainName={fromChain.name}
@@ -239,7 +244,7 @@ export default function Send() {
               onClose={() => setIsFromTokenAndChainOpen(false)}
             />
             <span className='opacity-60 text-sm mt-6'>To</span>
-            <TokenAndChain
+            {/* <TokenAndChain
               isOpen={isToTokenAndChainOpen}
               chainName={toChain.name}
               tokenName={selectedToToken.name}
@@ -247,10 +252,16 @@ export default function Send() {
               onSelectChain={handleSelectToChain}
               onClose={() => setIsToTokenAndChainOpen(false)}
               disabled
+            /> */}
+            <input
+              className='h-16 text-xl rounded-md px-4 bg-zinc-800 w-full focus:outline-none focus:ring-0'
+              value={receipent}
+              onChange={handleReceipentChange}
+              placeholder='Enter Address'
             />
             <span className='opacity-60 text-sm mt-6'>Amount</span>
             <input
-              className='h-16 text-2xl rounded-md px-4 bg-zinc-800 w-full focus:outline-none focus:ring-0'
+              className='h-16 text-xl rounded-md px-4 bg-zinc-800 w-full focus:outline-none focus:ring-0'
               value={amount}
               onChange={handleAmountChange}
               placeholder='0.0'

@@ -66,7 +66,7 @@ export default function TokenAndChain({
         <div className='flex gap-5 w-48 text-start'>
           <span className='w-12 h-12 rounded-full bg-light/10' />
           <div className='flex flex-col'>
-            <span className='text-base'>{tokenName}</span>
+            <span className='text-base font-semibold'>{tokenName}</span>
             <span className='text-xs opacity-70'>{chainName}</span>
           </div>
         </div>

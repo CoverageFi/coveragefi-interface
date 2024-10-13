@@ -17,12 +17,12 @@ export function Header() {
               Send
             </span>
           </Link>
-          <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
+          {/* <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
             About
           </span>
           <span className='opacity-60 hover:opacity-100 duration-200 px-4 py-2 hover:bg-buttonBg/60 rounded-3xl'>
             Docs
-          </span>
+          </span> */}
         </div>
       </div>
 

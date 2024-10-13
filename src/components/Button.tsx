@@ -1,12 +1,23 @@
-interface ButtonProps {
-  title: string
-  onClick?: () => void
+import React, { FC } from 'react'
+import styles from './styles.module.css'
+import { AiOutlineLoading3Quarters } from 'react-icons/ai'
+
+interface ButtonProps extends React.HTMLAttributes<HTMLButtonElement> {
+  connect?: boolean
+  disabled?: boolean
+  isLoading?: boolean
 }
 
-export default function Button({ title, onClick }: ButtonProps) {
+const Button: FC<ButtonProps> = ({ onClick, children, connect, disabled = false, color, isLoading }) => {
   return (
-    <button className='px-4 py-2 rounded-md bg-light text-dark mt-6' onClick={onClick}>
-      Button
+    <button
+      onClick={onClick}
+      type='button'
+      className='flex items-center justify-center px-4 py-4 font-semibold rounded-md bg-light/80 text-dark hover:bg-light duration-200'
+      disabled={disabled}>
+      {isLoading ? <AiOutlineLoading3Quarters className='h-7 animate-spin !duration-75' /> : children}
     </button>
   )
 }
+
+export default Button

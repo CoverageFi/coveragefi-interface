@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, use } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
 import { parseUnits, erc20Abi } from 'viem'
 import { sepolia } from 'viem/chains'
@@ -14,9 +14,11 @@ import { wormholeSendableTokens } from '@/utils/constants'
 import { UserAllowanceAmount } from '@/types/general'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
+import Button from '@/components/Button'
 
 export default function Send() {
   const [amount, setAmount] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const [toChain, setToChain] = useState(ETH_CHAINS[0])
   const [fromChain, setFromChain] = useState(ETH_CHAINS[0])
   const [selectedToken, setSelectedToken] = useState(wormholeSendableTokens[0])
@@ -81,79 +83,113 @@ export default function Send() {
   }
 
   const handleERC20Approving = async () => {
+    if (!selectedToken || !erc20ApproveWrite || !address) {
+      console.error('Missing required data for ERC20 approval')
+      return false
+    }
+    setIsLoading(true)
     try {
-      if (selectedToken && erc20ApproveWrite && address) {
-        const approveTx = await erc20ApproveWrite({
-          abi: erc20Abi,
-          address: selectedToken.address,
-          functionName: 'approve',
-          args: [WORMHOLE_SENDER_SEPOLIA, parseUnits((amount || 0).toString(), selectedToken.decimals)],
-          chain: chain,
-          account: address,
+      const approveTx = await erc20ApproveWrite({
+        abi: erc20Abi,
+        address: selectedToken.address,
+        functionName: 'approve',
+        args: [WORMHOLE_SENDER_SEPOLIA, parseUnits((amount || 0).toString(), selectedToken.decimals)],
+        chain: chain,
+        account: address,
+      })
+
+      if (!approveTx) {
+        console.error('Approval transaction failed to initiate')
+        return false
+      }
+
+      if (publicClient) {
+        const receipt = await publicClient.waitForTransactionReceipt({
+          hash: approveTx,
+          confirmations: 2,
+          timeout: 60000,
         })
-        if (approveTx) {
-          let txConfirm: bigint = BigInt(0)
-          if (publicClient) {
-            while (!txConfirm) {
-              try {
-                txConfirm = await publicClient.getTransactionConfirmations({
-                  hash: approveTx,
-                })
-                if (txConfirm) break
-              } catch (e) {}
-              await new Promise((resolve) => setTimeout(resolve, 3000))
-            }
-            await publicClient.waitForTransactionReceipt({
-              hash: approveTx,
-            })
-          }
+
+        if (receipt.status === 'success') {
           refetchErc20Allowance()
+          return true
+        } else {
+          console.error('Approval transaction failed')
+          return false
         }
-      } else throw new Error('Internal error happened')
+      } else {
+        console.error('Public client is not available')
+        return false
+      }
     } catch (e) {
-      console.error(e)
+      console.error('Error during ERC20 approval:', e)
+      return false
+    } finally {
+      setIsLoading(false)
     }
   }
 
   const handleSendCrossChain = async () => {
     console.log('Button clicked, function triggered!')
-    console.log(chainQuote.data)
+
+    if (!address || !amount || !chainQuote.data || !selectedToken) {
+      console.error('Missing required data for cross-chain deposit')
+      return false
+    }
+    setIsLoading(true)
     try {
       const receiverAddress = RECEIVER_CONTRACT_ADDRESSES[toChain.id]
-      let registerTx = null
+      const depositCost = chainQuote.data
 
-      if (address && amount) {
-        // Fetch the quote for the cross-chain deposit cost
-        const depositCost = chainQuote.data // This should be the result of your contract read
+      const tx = await sendWrite({
+        abi,
+        address: WORMHOLE_SENDER_SEPOLIA,
+        functionName: 'sendCrossChainDeposit',
+        args: [
+          10004, // Wormhole chain ID
+          '0xe3F3Fb3a7a5B046298817f0AB073a659f68cbdB3', // targetReceiver
+          '0xB57714641587509C8aFA8882Aa8756b749f2105B', // recipient
+          parseUnits(amount, selectedToken.decimals), // amount to send
+          selectedToken.address, // IERC20 token address
+        ],
+        chain: chain,
+        account: address,
+        value: depositCost,
+      })
 
-        if (!depositCost) {
-          console.error('Failed to fetch deposit cost')
-          return
-        }
+      if (!tx) {
+        console.error('Cross-chain deposit transaction failed to initiate')
+        return false
+      }
 
-        // Proceed with the sendCrossChainDeposit transaction
-        registerTx = await sendWrite({
-          abi,
-          address: WORMHOLE_SENDER_SEPOLIA,
-          functionName: 'sendCrossChainDeposit',
-          args: [
-            10004, // Wormhole chain ID
-            '0xe3F3Fb3a7a5B046298817f0AB073a659f68cbdB3', // targetReceiver
-            '0xB57714641587509C8aFA8882Aa8756b749f2105B', // recipient
-            parseUnits(amount, selectedToken.decimals), // amount to send
-            selectedToken.address, // IERC20 token address
-          ],
-          chain: chain,
-          account: address,
-          value: depositCost, // Use the fetched deposit cost here
+      console.log('Transaction sent:', tx)
+
+      if (publicClient) {
+        const receipt = await publicClient.waitForTransactionReceipt({
+          hash: tx,
+          confirmations: 2,
+          timeout: 120000,
         })
 
-        console.log('Transaction sent:', registerTx)
+        if (receipt.status === 'success') {
+          console.log('Cross-chain deposit transaction successful')
+          return true
+        } else {
+          console.error('Cross-chain deposit transaction failed')
+          return false
+        }
+      } else {
+        console.error('Public client is not available')
+        return false
       }
     } catch (error) {
       console.error('Error sending cross-chain deposit:', error)
+      return false
+    } finally {
+      setIsLoading(false)
     }
   }
+
   return (
     <div className='w-full min-h-screen flex items-center justify-center py-24'>
       <Card>
@@ -194,9 +230,9 @@ export default function Send() {
               inputMode='decimal'
             />
 
-            <button className='px-4 py-2 rounded-md bg-light text-dark mt-6' onClick={() => handleSendStarting()}>
-              Confirm Transaction
-            </button>
+            <Button onClick={() => handleSendStarting()} isLoading={isLoading}>
+              Submit
+            </Button>
           </div>
         </div>
       </Card>

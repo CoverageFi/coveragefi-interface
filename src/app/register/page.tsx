@@ -1,33 +1,81 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAccount } from 'wagmi'
+import { usePublicClient } from 'wagmi'
 import Card from '@/components/Card'
 import { useUsernameRegistration } from '@/hooks/useRegistration'
 import { abi } from '@/utils/abis/account-abstract-abi'
 import { WALLET_ABSTRACT_ADDRESS } from '@/utils/constants/addresses'
+import { useAuth } from '@/context/AuthContext'
+import Button from '@/components/Button'
 
 export default function Register() {
   const [username, setUsername] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
   const { address, chain } = useAccount()
   const { writeContractAsync: usernameWrite, data: userId } = useUsernameRegistration()
 
+  const router = useRouter()
+  const publicClient = usePublicClient()
+  const { isRegistered } = useAuth()
+
+  useEffect(() => {
+    if (isRegistered) {
+      router.push('/send')
+    }
+  }, [isRegistered, router])
+
   const handleRegister = async () => {
+    if (!address || !username) {
+      console.error('Address or username is missing')
+      return false
+    }
+    setIsLoading(true)
     try {
-      let registerTx = null
-      if (address && username) {
-        registerTx = await usernameWrite({
-          abi,
-          address: WALLET_ABSTRACT_ADDRESS,
-          functionName: 'registerUser',
-          args: [username],
-          chain,
-          account: address,
+      const registerTx = await usernameWrite({
+        abi,
+        address: WALLET_ABSTRACT_ADDRESS,
+        functionName: 'registerUser',
+        args: [username],
+        chain,
+        account: address,
+      })
+
+      if (!registerTx) {
+        setIsLoading(false)
+        console.error('Transaction failed to initiate')
+        return false
+      }
+
+      if (publicClient) {
+        const receipt = await publicClient.waitForTransactionReceipt({
+          hash: registerTx,
+          confirmations: 2,
+          timeout: 60000,
         })
+
+        if (receipt.status === 'success') {
+          setIsLoading(false)
+          router.push('/send')
+          return true
+        } else {
+          console.error('Transaction failed')
+          setIsLoading(false)
+          return false
+        }
+      } else {
+        console.error('Public client is not available')
+        setIsLoading(false)
+        return false
       }
     } catch (error) {
       console.error('Error registering user:', error)
+      setIsLoading(false)
+      return false
     }
   }
+
   return (
     <div className='w-full min-h-screen flex items-center justify-center'>
       <Card>
@@ -40,9 +88,9 @@ export default function Register() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder='Enter username'
             />
-            <button className='px-4 py-2 rounded-md bg-light text-dark' onClick={() => handleRegister()}>
+            <Button onClick={() => handleRegister()} isLoading={isLoading}>
               Submit
-            </button>
+            </Button>
           </div>
         </div>
       </Card>

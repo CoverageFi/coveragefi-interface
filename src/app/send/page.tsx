@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo, useEffect, use } from 'react'
 import { useAccount, usePublicClient } from 'wagmi'
-import { parseUnits, erc20Abi } from 'viem'
+import { parseUnits, erc20Abi, Address } from 'viem'
 import { sepolia } from 'viem/chains'
 import { useWormholeSend } from '@/hooks/useWormhole'
 import { useErc20ApprovedBalance, useErc20Approve } from '@/hooks/useErc20'
@@ -15,13 +15,17 @@ import { UserAllowanceAmount } from '@/types/general'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/Button'
+import TokenAndChain from '@/app/send/components/TokenAndChain'
 
 export default function Send() {
   const [amount, setAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [toChain, setToChain] = useState(ETH_CHAINS[0])
-  const [fromChain, setFromChain] = useState(ETH_CHAINS[0])
-  const [selectedToken, setSelectedToken] = useState(wormholeSendableTokens[0])
+  const [fromChain, setFromChain] = useState(ETH_CHAINS[1])
+  const [selectedFromToken, setSelectedFromToken] = useState(wormholeSendableTokens[0])
+  const [selectedToToken, setSelectedToToken] = useState(wormholeSendableTokens[0])
+  const [isFromTokenAndChainOpen, setIsFromTokenAndChainOpen] = useState(false)
+  const [isToTokenAndChainOpen, setIsToTokenAndChainOpen] = useState(false)
 
   const { address, chain } = useAccount()
   const { writeContractAsync: sendWrite } = useWormholeSend()
@@ -39,6 +43,35 @@ export default function Send() {
   const publicClient = usePublicClient({
     chainId: sepolia.id,
   })
+
+  const handleSelectFromToken = (tokenName: string, tokenAddress: Address) => {
+    const selectedToken = wormholeSendableTokens.find((token) => token.address === tokenAddress)
+    if (selectedToken) {
+      setSelectedFromToken(selectedToken) // Update the selected token
+    }
+  }
+
+  const handleSelectFromChain = (chainId: number) => {
+    const selectedChain = ETH_CHAINS.find((chain) => chain.id === chainId)
+    if (selectedChain) {
+      setFromChain(selectedChain)
+    }
+  }
+
+  const handleSelectToToken = (tokenName: string, tokenAddress: Address) => {
+    const selectedToken = wormholeSendableTokens.find((token) => token.address === tokenAddress)
+    if (selectedToken) {
+      setSelectedToToken(selectedToken)
+    }
+  }
+
+  // Handlers for chain selection for "To"
+  const handleSelectToChain = (chainId: number) => {
+    const selectedChain = ETH_CHAINS.find((chain) => chain.id === chainId)
+    if (selectedChain) {
+      setToChain(selectedChain)
+    }
+  }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -60,7 +93,7 @@ export default function Send() {
   })
 
   const { data: erc20ApprovedBalance, refetch: refetchErc20Allowance } = useErc20ApprovedBalance({
-    contractAddress: selectedToken?.address,
+    contractAddress: selectedFromToken?.address,
     spenderAddress: WORMHOLE_SENDER_SEPOLIA,
     ownerAddress: address,
   }) as { data: UserAllowanceAmount; refetch: () => Promise<any> }
@@ -71,7 +104,7 @@ export default function Send() {
   }, [erc20ApprovedBalance])
 
   const handleSendStarting = async () => {
-    const parsedSendAmount = parseUnits(amount.toString(), selectedToken.decimals)
+    const parsedSendAmount = parseUnits(amount.toString(), selectedFromToken.decimals)
     const parsedSendAmountBigInt = BigInt(parsedSendAmount.toString())
     const userAllowanceBigInt = BigInt(userErc20ApprovedBalance || '0')
 
@@ -83,7 +116,7 @@ export default function Send() {
   }
 
   const handleERC20Approving = async () => {
-    if (!selectedToken || !erc20ApproveWrite || !address) {
+    if (!selectedFromToken || !erc20ApproveWrite || !address) {
       console.error('Missing required data for ERC20 approval')
       return false
     }
@@ -91,9 +124,9 @@ export default function Send() {
     try {
       const approveTx = await erc20ApproveWrite({
         abi: erc20Abi,
-        address: selectedToken.address,
+        address: selectedFromToken.address,
         functionName: 'approve',
-        args: [WORMHOLE_SENDER_SEPOLIA, parseUnits((amount || 0).toString(), selectedToken.decimals)],
+        args: [WORMHOLE_SENDER_SEPOLIA, parseUnits((amount || 0).toString(), selectedFromToken.decimals)],
         chain: chain,
         account: address,
       })
@@ -132,7 +165,7 @@ export default function Send() {
   const handleSendCrossChain = async () => {
     console.log('Button clicked, function triggered!')
 
-    if (!address || !amount || !chainQuote.data || !selectedToken) {
+    if (!address || !amount || !chainQuote.data || !selectedFromToken) {
       console.error('Missing required data for cross-chain deposit')
       return false
     }
@@ -149,8 +182,8 @@ export default function Send() {
           10004, // Wormhole chain ID
           '0xe3F3Fb3a7a5B046298817f0AB073a659f68cbdB3', // targetReceiver
           '0xB57714641587509C8aFA8882Aa8756b749f2105B', // recipient
-          parseUnits(amount, selectedToken.decimals), // amount to send
-          selectedToken.address, // IERC20 token address
+          parseUnits(amount, selectedFromToken.decimals), // amount to send
+          selectedFromToken.address, // IERC20 token address
         ],
         chain: chain,
         account: address,
@@ -195,32 +228,26 @@ export default function Send() {
       <Card>
         <div className='flex flex-col gap-12 w-full justify-center items-center py-4'>
           <h4 className='font-bold opacity-90 text-3xl lg:text-5xl text-center py-3'>Send</h4>
-
           <div className='flex flex-col gap-3 text-lg w-full'>
-            <span className='opacity-60 text-sm'>From Chain</span>
-            {/* <select
-              className='h-16 text-2xl text-center rounded-md bg-zinc-800 w-full focus:outline-none focus:ring-0'
-              value={fromChain.name}
-              onChange={(e) => setFromChain(Number(e.target.value))}>
-              {ETH_CHAINS.map((chain) => (
-                <option key={chain.chainId} value={chain.chainId}>
-                  {chain.name}
-                </option>
-              ))}
-            </select> */}
-
-            <span className='opacity-60 text-sm mt-6'>To Chain</span>
-            {/* <select
-              className='h-16 text-2xl text-center rounded-md bg-zinc-800 w-full focus:outline-none focus:ring-0'
-              value={toChain}
-              onChange={(e) => setToChain(Number(e.target.value))}>
-              {ETH_CHAINS.map((chain) => (
-                <option key={chain.chainId} value={chain.chainId}>
-                  {chain.name}
-                </option>
-              ))}
-            </select> */}
-
+            <span className='opacity-60 text-sm mt-6'>From</span>
+            <TokenAndChain
+              isOpen={isFromTokenAndChainOpen}
+              chainName={fromChain.name}
+              tokenName={selectedFromToken.name}
+              onSelectToken={handleSelectFromToken}
+              onSelectChain={handleSelectFromChain}
+              onClose={() => setIsFromTokenAndChainOpen(false)}
+            />
+            <span className='opacity-60 text-sm mt-6'>To</span>
+            <TokenAndChain
+              isOpen={isToTokenAndChainOpen}
+              chainName={toChain.name}
+              tokenName={selectedToToken.name}
+              onSelectToken={handleSelectToToken}
+              onSelectChain={handleSelectToChain}
+              onClose={() => setIsToTokenAndChainOpen(false)}
+              disabled
+            />
             <span className='opacity-60 text-sm mt-6'>Amount</span>
             <input
               className='h-16 text-2xl rounded-md px-4 bg-zinc-800 w-full focus:outline-none focus:ring-0'
